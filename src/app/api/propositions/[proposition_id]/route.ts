@@ -1,11 +1,10 @@
 import prisma from '@/lib/prisma'
 import { NextResponse, NextRequest } from 'next/server'
 
-//INCOMPLETE --- NEEDS TO BE FINISHED
-
 /**
  * @fileoverview
- * This file contains the api call that returns all of the propositions
+ * This file contains the api call that will return the data from a 
+ * given proposition id.
  *
  * @dependencies
  * - prisma: ORM for database interaction.
@@ -16,38 +15,30 @@ import { NextResponse, NextRequest } from 'next/server'
  * - The `/propositions/years/[year]` endpoint retrieves propositions for a specific year.
  * - The `/propositions/[proposition_id]` endpoint retrieves data for a given proposition ID.
  *
- * @author Oliver Ramirez
+ * @author Oliver Ramirez, Dan Schmidt
  * @version 1.0.0
  * @date 2024-11-28
  * 
  */
 
 
-//CHANGE THIS CODE TO RETURN ALL PROPOSITIONS
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, {params}: {params: {proposition_id: string}}) {
   try {
-    // Extract the year query parameter from the URL
-    const { searchParams } = new URL(req.url);
-    const year = searchParams.get('year');
-    console.log("year is" + year)
+    const { proposition_id }= await params
 
     // Check if 'year' is null or not a valid number
-    if (!year) {
-     return NextResponse.json({ error: 'Year query parameter is required' }, { status: 400 });
+    if (!proposition_id) {
+     return NextResponse.json({ error: 'proposition_id parameter is required' }, { status: 400 });
   }
     
-    const propositions = await prisma.proposition_votes.findMany({
-      where:{
-        proposition_year: parseInt(year, 10)
-      },
-      select: {
-        proposition_id: true,
-        proposition_name: true,
+    const prop_data = await prisma.proposition_county_votes.findMany({
+      where: {
+        proposition_id: parseInt(proposition_id, 10)
       }
     })
-    console.log("propositions are" + propositions[0].proposition_name)
     
-    return NextResponse.json(propositions)
+    
+    return NextResponse.json(prop_data)
   } catch (error) {
     console.error('Prisma error:', error)
     return NextResponse.json(
