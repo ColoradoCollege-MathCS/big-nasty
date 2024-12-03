@@ -3,18 +3,12 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import { Feature, FeatureCollection, Geometry } from 'geojson';
+import {VoteData} from '@/types/propdata';
 
-type VoteData = {
-  countyId: string;
-  countyName: string;
-  votesFor: number;
-  votesAgainst: number;
-  turnout: number;
-}
 
 type MapProps = {
-  propositionId?: string;
-  yearId?: string;
+  propositionId?: number;
+  year?: number;
   voteData?: VoteData[];
 }
 
@@ -23,7 +17,7 @@ type CountyProperties = {
   [key: string]: any;
 }
 
-export function ColoradoMap({ propositionId, yearId, voteData = [] }: MapProps) {
+export function ColoradoMap({ propositionId, year: year, voteData = [] }: MapProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<d3.Selection<HTMLDivElement, unknown, HTMLElement, any>>();
@@ -48,18 +42,19 @@ export function ColoradoMap({ propositionId, yearId, voteData = [] }: MapProps) 
 
     tooltipRef.current = tooltip;
 
-    function getVotes(countyName: string) {
-      const countyData = voteData.find(d => d.countyName === countyName);
+    function getVotes(county_name: string) {
+      console.log("county name is " ,county_name)
+      const countyData = voteData.find(d => d.county_name === county_name);
       if (!countyData) return { votesFor: 0, votesAgainst: 0, turnout: 0 };
       return {
-        votesFor: countyData.votesFor,
-        votesAgainst: countyData.votesAgainst,
-        turnout: countyData.turnout
+        votesFor: countyData.yes_count,
+        votesAgainst: countyData.no_count,
+        turnout: countyData.total_votes
       };
     }
 
-    function getColor(countyName: string) {
-      const { votesFor, votesAgainst } = getVotes(countyName);
+    function getColor(county_name: string) {
+      const { votesFor, votesAgainst } = getVotes(county_name);
       if (votesFor === 0 && votesAgainst === 0) return '#ccc';
       return votesFor > votesAgainst ? '#1a9850' : '#d73027';
     }
@@ -93,6 +88,7 @@ export function ColoradoMap({ propositionId, yearId, voteData = [] }: MapProps) 
         .attr('stroke-width', 0.5)
         .on('mouseenter', function(event, d: Feature<Geometry, CountyProperties>) {
           const votes = getVotes(d.properties.name);
+          console.log(d, votes)
           d3.select(this).style('opacity', 0.8);
           tooltip
             .style('opacity', 1)
