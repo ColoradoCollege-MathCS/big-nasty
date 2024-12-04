@@ -8,44 +8,31 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Proposition {
-  id          String   @id @default(uuid())
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  title       String   @db.VarChar(255)
-  description String   @db.Text
-  yearResults Result[]
+model propositions {
+  id                       Int                        @id @default(autoincrement())
+  name                     String?                    @db.VarChar(255)
+  description              String?
+  year                     Int?
+  created_at               DateTime?                  @default(now()) @db.Timestamp(6)
+  updated_at               DateTime?                  @default(now()) @db.Timestamp(6)
+  proposition_county_votes proposition_county_votes[]
 }
 
-model Year {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  year      Int      @unique
-  results   Result[]
+model counties {
+  id                       Int                        @id @default(autoincrement())
+  name                     String?                    @db.VarChar(255)
+  proposition_county_votes proposition_county_votes[]
 }
 
-model County {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name      String   @db.VarChar(255)
-  results   Result[]
-}
+model proposition_county_votes {
+  proposition_id Int
+  county_id      Int
+  yes_count      Int?         @default(0)
+  no_count       Int?         @default(0)
+  total_votes    Int?         @default(dbgenerated("(yes_count + no_count)"))
+  updated_at     DateTime?    @default(now()) @db.Timestamp(6)
+  counties       counties     @relation(fields: [county_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  propositions   propositions @relation(fields: [proposition_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-model Result {
-  id            String      @id @default(uuid())
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  votesFor      Int
-  votesAgainst  Int
-  turnout       Int // Total number of eligible voters
-  proposition   Proposition @relation(fields: [propositionId], references: [id])
-  propositionId String
-  year          Year        @relation(fields: [yearId], references: [id])
-  yearId        String
-  county        County      @relation(fields: [countyId], references: [id])
-  countyId      String
-
-  @@unique([propositionId, yearId, countyId])
+  @@id([proposition_id, county_id])
 }
