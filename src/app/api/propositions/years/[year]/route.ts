@@ -1,11 +1,10 @@
 import prisma from '@/lib/prisma'
 import { NextResponse, NextRequest } from 'next/server'
 
-//INCOMPLETE --- NEEDS TO BE FINISHED
-
 /**
  * @fileoverview
  * This file contains the api call that returns all of the propositions
+ * in a given voting year based on the given year value
  *
  * @dependencies
  * - prisma: ORM for database interaction.
@@ -16,36 +15,35 @@ import { NextResponse, NextRequest } from 'next/server'
  * - The `/propositions/years/[year]` endpoint retrieves propositions for a specific year.
  * - The `/propositions/[proposition_id]` endpoint retrieves data for a given proposition ID.
  *
- * @author Oliver Ramirez
+ * @author Oliver Ramirez, Dan Schmidt
  * @version 1.0.0
  * @date 2024-11-28
  * 
  */
 
 
-//CHANGE THIS CODE TO RETURN ALL PROPOSITIONS
-export async function GET(req: NextRequest) {
+export async function GET(req: NextRequest, {params}: {params: {year: string}}) {
   try {
-    // Extract the year query parameter from the URL
-    const { searchParams } = new URL(req.url);
-    const year = searchParams.get('year');
-    console.log("year is" + year)
+    const { year }= await params
 
     // Check if 'year' is null or not a valid number
     if (!year) {
      return NextResponse.json({ error: 'Year query parameter is required' }, { status: 400 });
   }
     
-    const propositions = await prisma.proposition_votes.findMany({
+    const propositions = await prisma.propositions.findMany({
       where:{
-        proposition_year: parseInt(year, 10)
+        year: parseInt(year, 10)
       },
       select: {
-        proposition_id: true,
-        proposition_name: true,
+        id: true,
+        name: true,
+        year: true,
+        for_statement: true,
+        against_statement:true
       }
     })
-    console.log("propositions are" + propositions[0].proposition_name)
+    console.log(propositions)
     
     return NextResponse.json(propositions)
   } catch (error) {
