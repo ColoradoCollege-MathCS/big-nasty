@@ -3,6 +3,18 @@
 import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3-v4';
 import { VoteData } from '@/types/propdata';
+import { zoom, ZoomBehavior } from 'd3-zoom';
+import { Selection, select } from 'd3-selection';
+
+// // If your selection is SVG-based:
+// let svgSelection: Selection<SVGSVGElement, unknown, null, undefined>;
+
+// // Create a zoom behavior typed for an SVG element.
+// const zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> = zoom<SVGSVGElement, unknown>();
+
+// // Now svgSelection and zoomBehavior share compatible element types.
+// svgSelection.call(zoomBehavior);
+
 
 type MapProps = {
   propositionId?: number;
@@ -59,7 +71,14 @@ export function PropositionHistogram({ propositionId, year, voteData }: MapProps
       .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
 
-    
+    const zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 30])
+      .extent([[0, 0], [width, height]])
+      .translateExtent([[0, 0], [width, height]])
+      .on('zoom', updateChart);
+
+    d3.select(svgRef.current).call(zoomBehavior);
+
 
   //d3.select(svgRef.current).call(zoom);
     // Extract the county names and voter data
@@ -351,6 +370,7 @@ scatter
       };
   }, [voteData]); // Re-render when voteData changes
 
+  
   return (
     <div ref={containerRef} className="relative w-full h-full">
       <svg ref={svgRef} className="w-full h-full" />
