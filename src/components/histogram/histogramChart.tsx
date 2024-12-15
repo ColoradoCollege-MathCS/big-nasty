@@ -1,10 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import * as d3 from 'd3-v4';
-import { VoteData } from '@/types/propdata';
-import { zoom, ZoomBehavior } from 'd3-zoom';
-import { Selection, select } from 'd3-selection';
+import * as d3 from 'd3';
 
 // // If your selection is SVG-based:
 // let svgSelection: Selection<SVGSVGElement, unknown, null, undefined>;
