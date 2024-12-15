@@ -78,18 +78,32 @@ export function ColoradoMap({ propositionId, year: year, voteData = [] }: MapPro
     }
     
     
+    // function setupcolor() {
+    //   const colorScale = d3
+    //     .scaleLinear<number, number>() // Domain and range should match the interpolation type
+    //     .domain([0, 25, 50,75, 100]) // Map percentages to color stops
+    //     .range([0, 1, 2, 3,4]) 
+    //     .interpolate(() =>
+    //       d3.interpolateRgbBasis(['#edf8fb',
+    //     '#b3cde3',
+    //     '#8c96c6',
+    //     '#8856a7',
+    //     '#810f7c',])
+    //     );
+    //   return (value: number) => colorScale(value);
+    // }
+    
     function setupcolor() {
       const colorScale = d3
-        .scaleLinear<number, number>() // Domain and range should match the interpolation type
-        .domain([0, 25, 50,75, 100]) // Map percentages to color stops
-        .range([0, 1, 2, 3,4]) 
-        .interpolate(() =>
-          d3.interpolateRgbBasis(['#edf8fb',
-        '#b3cde3',
-        '#8c96c6',
-        '#8856a7',
-        '#810f7c',])
-        );
+      .scaleLinear<string>()
+      .domain([0, 25, 50, 75, 100])
+      .range([
+      '#edf8fb',
+      '#b3cde3',
+      '#8c96c6',
+      '#8856a7',
+      '#810f7c',
+    ]);
       return (value: number) => colorScale(value);
     }
     
