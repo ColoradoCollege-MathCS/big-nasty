@@ -54,9 +54,9 @@ export function PropositionHistogram({ propositionId, year, voteData }: MapProps
       .attr('width', width + margin.left + margin.right)
       .attr('height', height + margin.top + margin.bottom)
       .append('g')
-      .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+      .attr('transform', `translate(${margin.left},${margin.top})`);
 
-    console.log("in hist, voteData is: ", voteData);
+    // Extract county names
     const counties = voteData.map((d) => d.county_name);
 
     // Scales
@@ -72,227 +72,85 @@ export function PropositionHistogram({ propositionId, year, voteData }: MapProps
       .nice()
       .range([height, 0]);
 
+    // Define the keys used by the stack
+    type StackKey = 'yes_count' | 'no_count';
+
+    // Create a typed stack
+    const stackedData = d3
+      .stack<VoteData, StackKey>()
+      .keys(['yes_count', 'no_count'])
+      (voteData);
+
+    // Create a typed color scale
+    const color = d3
+      .scaleOrdinal<StackKey, string>()
+      .domain(['yes_count', 'no_count'])
+      .range(['#7fbf7b', '#af8dc3']);
+
+    // Draw the X-axis
     svg
-      .append('defs')
-      .append('pattern')
-      .attr('id', 'diagonalHatch_hover')
-      .attr('patternUnits', 'userSpaceOnUse')
-      .attr('width', 4)
-      .attr('height', 4)
-      .append('path')
-      .attr('d', 'M-1,1 l2,-2 M0,4 l4,-4 M3,5 l2,-2')
-      .attr('stroke', '#ccc')
-      .attr('stroke-width', 0.4);
-
-    // clipPath for zooming/panning
-    svg
-      .append('defs')
-      .append('clipPath')
-      .attr('id', 'clip')
-      .append('rect')
-      .attr('width', width)
-      .attr('height', height + 100)
-      .attr('x', 0)
-      .attr('y', 0);
-
-    const scatter = svg
-      .append('g')
-      .attr('clip-path', 'url(#clip)');
-
-    // X-axis label
-    const xAxisLabel = svg
-      .append('text')
-      .attr('class', 'x-axis-label')
-      .attr('x', width / 2)
-      .attr('y', height + 35)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '24px')
-      .style('font-weight', 'bold')
-      .text('Counties');
-
-    // X-axis
-    scatter
       .append('g')
       .attr('class', 'x-axis')
-      .attr('transform', 'translate(0,' + height + ')')
+      .attr('transform', `translate(0,${height})`)
       .call(d3.axisBottom(x).tickSizeOuter(0))
       .selectAll('text')
       .attr('transform', 'rotate(-45)')
       .style('text-anchor', 'end')
-      .style('font-size', '12px')
-      .style('font-weight', 'bold')
-      .style('opacity', '0');
+      .style('font-size', '12px');
 
-    // Y-axis label
-    const yAxisLabel = svg
-      .append('text')
-      .attr('class', 'y-axis-label')
-      .attr('x', -height / 2)
-      .attr('y', -margin.left + 20)
-      .attr('transform', 'rotate(-90)')
-      .attr('text-anchor', 'middle')
-      .style('font-size', '16px')
-      .style('font-weight', 'bold')
-      .text('Total Votes');
-
-    // Y-axis
-    const yAxis = svg.append('g').call(d3.axisLeft(y));
-
-    const stackedData = d3
-      .stack()
-      .keys(['yes_count', 'no_count'])
-      (voteData as any);
-
-    const color = d3
-      .scaleOrdinal()
-      .domain(['yesVotes', 'noVotes'])
-      .range(['#7fbf7b', '#af8dc3']);
-
-    // Zoom behavior
-    const xLinear = d3
-      .scaleLinear()
-      .domain([0, counties.length])
-      .range([0, width]);
-
-    function updateChart(event: any) {
-      const t = event.transform;
-
-      // Limit side-to-side movement
-      t.x = Math.min(0, Math.max(t.x, -width * (t.k - 1)));
-      t.y = 0;
-
-      const newX = t.rescaleX(xLinear);
-
-      // Determine visible counties
-      const visibleCounties = counties.filter((county, i) => {
-        const xPos = newX(i);
-        return xPos >= 0 && xPos <= width;
-      });
-
-      // New Y domain based on visible data
-      const visibleMax = d3.max(visibleCounties, (county) => {
-        const countyData = voteData.find((d) => d.county_name === county);
-        return countyData ? countyData.yes_count + countyData.no_count : 0;
-      });
-
-      // Fade axes/labels based on zoom
-      if (t.k > 2.1) {
-        xAxisLabel
-          .transition()
-          .duration(100)
-          .style('opacity', 0);
-        scatter
-          .selectAll('text')
-          .transition()
-          .duration(100)
-          .style('opacity', '1');
-      } else {
-        xAxisLabel
-          .transition()
-          .duration(100)
-          .style('opacity', 1);
-        scatter
-          .selectAll('text')
-          .transition()
-          .duration(100)
-          .style('opacity', '0');
-      }
-
-      // Update Y scale domain
-      const newY = y.copy().domain([0, visibleMax || 1]);
-
-      // Update Y-axis
-      yAxis
-        .transition()
-        .duration(500)
-        .ease(d3.easeCubicOut)
-        .call(d3.axisLeft(newY));
-
-      // Compute new bar width
-      const barWidth = Math.min(newX(1) - newX(0), 40);
-
-      // Update bars
-      svg
-        .selectAll('.bars rect')
-        .transition()
-        .duration(500)
-        .ease(d3.easeCubicOut)
-        .attr('x', (d: any) => newX(counties.indexOf(d.data.county_name)))
-        .attr('width', barWidth)
-        .attr('y', (d: any) => newY(d[1]))
-        .attr('height', (d: any) => newY(d[0]) - newY(d[1]));
-
-      // Move x-axis ticks
-      svg
-        .selectAll('.x-axis .tick')
-        .transition()
-        .duration(500)
-        .ease(d3.easeCubicOut)
-        .attr('transform', (d: any) =>
-          'translate(' + (newX(counties.indexOf(d)) + barWidth * 0.5) + ',0)'
-        );
-    }
-
-    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 30])
-      .extent([[0, 0], [width, height]])
-      .translateExtent([[0, 0], [width, height]])
-      .on('zoom', (event) => updateChart(event));
-
-    d3.select(svgRef.current).call(zoomBehavior);
+    // Draw the Y-axis
+    svg.append('g').call(d3.axisLeft(y));
 
     // Bars
-    scatter
+    svg
       .append('g')
       .attr('class', 'bars')
       .selectAll('g')
       .data(stackedData)
       .enter()
       .append('g')
-      .attr('fill', (d: any) => color(d.key as string))
+      .attr('fill', (d) => color(d.key))
       .selectAll('rect')
-      .data((d: any) => d)
+      .data((d) => d)
       .enter()
       .append('rect')
-      .attr('x', (d: any) => x(d.data.county_name)!)
-      .attr('y', (d: any) => y(d[1]))
-      .attr('height', (d: any) => y(d[0]) - y(d[1]))
+      .attr('x', (d) => x(d.data.county_name)!)
+      .attr('y', (d) => y(d[1]))
+      .attr('height', (d) => y(d[0]) - y(d[1]))
       .attr('width', x.bandwidth())
-      .attr('data-key', (d: any) => d.data.County)
-      .style('stroke', '#000000')
-      .on('mouseenter', function (event: MouseEvent, d: any) {
+      .on('mouseenter', function (event: MouseEvent, d) {
         const [mouseX, mouseY] = d3.pointer(event, document.body);
+        const { county_name, yes_count, no_count } = d.data;
+
         d3.select(this).style('opacity', 0.7);
-        const countyName = d.data.county_name;
-        const yesVotes = d.data.yes_count;
-        const noVotes = d.data.no_count;
+
         tooltip
           .style('opacity', 1)
           .html(
-            `<div class="font-medium text-gray-900 mb-1">${countyName} County</div>
+            `<div class="font-medium text-gray-900 mb-1">${county_name}</div>
              <div class="text-gray-700">
-             Votes For: ${yesVotes.toLocaleString()}<br/>
-             Votes Against: ${noVotes.toLocaleString()}<br/>
-             Total Votes: ${(yesVotes + noVotes).toLocaleString()}</div>`
+               Votes For: ${yes_count.toLocaleString()}<br/>
+               Votes Against: ${no_count.toLocaleString()}<br/>
+               Total Votes: ${(yes_count + no_count).toLocaleString()}</div>`
           )
-          .style('left', mouseX + 10 + 'px')
-          .style('top', mouseY - 20 + 'px');
+          .style('left', `${mouseX + 10}px`)
+          .style('top', `${mouseY - 20}px`);
       })
       .on('mousemove', function (event: MouseEvent) {
         const [mouseX, mouseY] = d3.pointer(event, document.body);
+
         tooltip
-          .style('left', mouseX + 10 + 'px')
-          .style('top', mouseY - 20 + 'px');
+          .style('left', `${mouseX + 10}px`)
+          .style('top', `${mouseY - 20}px`);
       })
       .on('mouseleave', function () {
         d3.select(this).style('opacity', 1);
         tooltip.style('opacity', 0);
       });
 
+    // Clean up tooltips on unmount
     return () => {
-      if (tooltipRef.current) {
-        tooltipRef.current.remove();
-      }
+      tooltip.remove();
     };
   }, [voteData]);
 
@@ -302,4 +160,3 @@ export function PropositionHistogram({ propositionId, year, voteData }: MapProps
     </div>
   );
 }
-
