@@ -52,8 +52,8 @@ export async function GET(
       name: proposition.name,
       year: proposition.year,
       description: proposition.description,
-      for_statement: proposition.for_statement,
-      against_statement: proposition.against_statement,
+      //for_statement: proposition.for_statement,
+      //against_statement: proposition.against_statement,
       passed: proposition.passed,
       votes: formattedVotes,
     };
